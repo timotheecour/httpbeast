@@ -45,14 +45,18 @@ type
   Settings* = object
     port*: Port
     bindAddr*: string
+    reusePort*: bool
+      # when false, will fail if --threads is passed or if 2
+      # processes bind to same address/port
 
 const
   serverInfo = "HttpBeast"
 
-proc initSettings*(port: Port = Port(8080), bindAddr: string = ""): Settings =
+proc initSettings*(port: Port = Port(8080), bindAddr: string = "", reusePort: bool): Settings =
   Settings(
     port: port,
-    bindAddr: bindAddr
+    bindAddr: bindAddr,
+    reusePort: reusePort,
   )
 
 proc initData(fdKind: FdKind, ip = ""): Data =
@@ -269,7 +273,7 @@ proc eventLoop(params: (OnRequest, Settings)) =
 
   let server = newSocket()
   server.setSockOpt(OptReuseAddr, true)
-  server.setSockOpt(OptReusePort, true)
+  server.setSockOpt(OptReusePort, settings.reusePort)
   server.bindAddr(settings.port, settings.bindAddr)
   server.listen()
   server.getFd().setBlocking(false)
